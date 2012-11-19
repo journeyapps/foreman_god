@@ -26,9 +26,16 @@ describe GodConfig do
       watch.interval.should == 60.seconds
       watch.env.should == {'PORT' => '5000'}
       watch.start.should == 'ruby ../simple_loop.rb -p 5000'
-      watch.log.should == 'simple-loop-1.log'
+      watch.log.should == '/dev/null'
       watch.uid.should == nil
 
+    end
+
+    it "should log if log is specified" do
+      ForemanGod.log_path = 'spec/tmp'
+      config.watch
+      watch = God.watches.values.first
+      watch.log.should == 'spec/tmp/simple-loop-1.log'
     end
 
 
@@ -58,7 +65,7 @@ describe GodConfig do
       watch.interval.should == 60.seconds
       watch.env.should == {'PORT' => '5000', 'MY_VAR' => '12345', 'ANOTHER_VAR' => 'yes'}
       watch.start.should == 'ruby ../simple_loop.rb -p 5000'
-      watch.log.should == 'configured-app-loop-1.log'
+      watch.log.should == '/dev/null'
       watch.uid.should == user
     end
 

@@ -1,6 +1,7 @@
 require 'rspec'
 $load_god = true
 require 'god'
+require 'foreman_god'
 
 include ForemanGod
 
@@ -30,5 +31,12 @@ RSpec.configure do |config|
   # Clean/Reset God's state prior to running the tests
   config.before :each do
     God.reset
+    ForemanGod.log_path = nil
+    FileUtils.rm_rf 'spec/tmp'
+    FileUtils.mkdir_p 'spec/tmp'
+  end
+
+  config.after :each do
+    #FileUtils.rm_rf 'spec/tmp'
   end
 end

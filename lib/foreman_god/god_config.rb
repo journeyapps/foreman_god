@@ -4,6 +4,39 @@ require 'foreman'
 require 'foreman/engine'
 require 'thor/core_ext/hash_with_indifferent_access'
 require 'god'
+require 'foreman_god'
+
+module God
+  module Conditions
+    # Adapted from https://gist.github.com/571095
+    class ForemanRestartFileTouched < PollCondition
+      attr_accessor :restart_file
+
+      def initialize
+        super
+      end
+
+      def process_start_time
+        Time.parse(`ps -o lstart= -p #{self.watch.pid}`)
+      end
+
+      def restart_file_modification_time
+        File.mtime(self.restart_file) rescue Time.at(0)
+      end
+
+      def valid?
+        valid = true
+        valid &= complain("Attribute 'restart_file' must be specified", self) if self.restart_file.nil?
+        valid
+      end
+
+      def test
+        process_start_time < restart_file_modification_time
+      end
+    end
+  end
+end
+
 
 module ForemanGod
   class GodConfig
@@ -52,7 +85,9 @@ module ForemanGod
         w.interval = 60.seconds
         w.env = env
         w.start = process.expanded_command(env)
-        w.log = "#{app_name}-#{name}-#{n}.log"  # TODO: make this folder configurable
+        if ForemanGod.log_path
+          w.log = File.join(ForemanGod.log_path, "#{app_name}-#{name}-#{n}.log")
+        end
 
         w.uid = user_name if user_name
         # w.gid = ?
@@ -61,6 +96,12 @@ module ForemanGod
           on.condition(:memory_usage) do |c|
             c.above = 350.megabytes
             c.times = 2
+          end
+
+          on.condition(:foreman_restart_file_touched) do |c|
+            c.interval = 5.seconds
+            # Should we make this path configurable?
+            c.restart_file = File.join(process.cwd, 'tmp', 'restart.txt')
           end
         end
 
