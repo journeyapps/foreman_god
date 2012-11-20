@@ -73,6 +73,10 @@ module ForemanGod
       @options[:user]
     end
 
+    def log_path
+      @options[:log] || 'log'
+    end
+
     def watch_process(name, process, n)
       port = @engine.port_for(process, n)
       base_env = process.instance_variable_get(:@options)[:env]
@@ -85,8 +89,11 @@ module ForemanGod
         w.interval = 60.seconds
         w.env = env
         w.start = process.expanded_command(env)
-        if ForemanGod.log_path
-          w.log = File.join(ForemanGod.log_path, "#{app_name}-#{name}-#{n}.log")
+        log = File.expand_path(log_path, process.cwd)
+        if File.directory? log
+          w.log = File.join(log, "#{app_name}-#{name}-#{n}.log")
+        else
+          LOG.warn "Log path does not exist: #{log}"
         end
 
         w.uid = user_name if user_name

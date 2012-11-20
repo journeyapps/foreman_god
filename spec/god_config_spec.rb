@@ -32,23 +32,27 @@ describe GodConfig do
     end
 
     it "should log if log is specified" do
-      ForemanGod.log_path = 'spec/tmp'
-      config.watch
-      watch = God.watches.values.first
-      watch.log.should == 'spec/tmp/simple-loop-1.log'
+      begin
+        FileUtils.mkdir 'samples/simple/log'
+        config.watch
+        watch = God.watches.values.first
+        watch.log.should == File.absolute_path('samples/simple/log/simple-loop-1.log')
+      ensure
+        FileUtils.rm_rf 'samples/simple/log'
+      end
     end
-
 
   end
 
   context "configuration" do
     let(:config) { GodConfig.new(sample('configuration')) }
     let(:user) { Etc.getlogin }
+
     it "should load basic properties" do
       config.dir_name.should == 'configuration'
       config.app_name.should == 'configured-app'
       config.user_name.should == 'test'
-      config.options.should ==  {"formation"=>"loop=1,another=2", "app"=>"configured-app", "user"=>"test"}
+      config.options.should ==  {"formation"=>"loop=1,another=2", "app"=>"configured-app", "user"=>"test", "log" => "."}
     end
 
     it "should watch" do
@@ -65,7 +69,7 @@ describe GodConfig do
       watch.interval.should == 60.seconds
       watch.env.should == {'PORT' => '5000', 'MY_VAR' => '12345', 'ANOTHER_VAR' => 'yes'}
       watch.start.should == 'ruby ../simple_loop.rb -p 5000'
-      watch.log.should == '/dev/null'
+      watch.log.should == File.absolute_path('samples/configuration/configured-app-loop-1.log')
       watch.uid.should == user
     end
 

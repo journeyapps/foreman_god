@@ -1,3 +1,4 @@
 formation: loop=1,another=2
 app: configured-app
 user: test
+log: .
