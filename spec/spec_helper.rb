@@ -43,5 +43,6 @@ RSpec.configure do |config|
 
   config.after :each do
     FileUtils.rm_rf 'spec/tmp'
+    FileUtils.rm_rf 'spec/simple/tmp'
   end
 end

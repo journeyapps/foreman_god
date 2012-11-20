@@ -80,4 +80,9 @@ describe GodConfig do
     God.watches.values.count.should == 1
   end
 
+  it "should not use 'current' for the app name" do
+    FileUtils.mkdir_p 'spec/tmp/test/current'
+    FileUtils.touch 'spec/tmp/test/current/Procfile'
+    GodConfig.new('spec/tmp/test/current').app_name.should == 'test'
+  end
 end

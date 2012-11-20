@@ -44,6 +44,9 @@ module ForemanGod
 
     def initialize dir
       @dir_name = File.basename(File.absolute_path(dir))
+      if @dir_name == 'current'
+        @dir_name = File.basename(File.dirname(File.absolute_path(dir)))
+      end
 
       options_file = File.join(dir, ".foreman")
       temp_options = {}
