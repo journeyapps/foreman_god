@@ -4,7 +4,7 @@ require 'god'
 require 'foreman_god'
 
 LOG_FILE = 'god.log'
-FileUtils.rm_r LOG_FILE
+FileUtils.rm_f LOG_FILE
 
 Object.send(:remove_const, :LOG)
 LOG = God::Logger.new(File.open(LOG_FILE, 'w'))
