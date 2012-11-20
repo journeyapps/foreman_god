@@ -17,7 +17,7 @@ module God
       end
 
       def process_start_time
-        Time.parse(`ps -o lstart= -p #{self.watch.pid}`)
+        Time.parse(`ps -o lstart= -p #{self.watch.pid}`) rescue nil
       end
 
       def restart_file_modification_time
@@ -31,7 +31,12 @@ module God
       end
 
       def test
-        process_start_time < restart_file_modification_time
+        ptime = process_start_time
+        if ptime
+          process_start_time < restart_file_modification_time
+        else
+          false
+        end
       end
     end
   end
@@ -80,6 +85,34 @@ module ForemanGod
       @options[:log] || 'log'
     end
 
+
+    def wrap_command(cmd)
+      if user_name
+        user_home = File.join('/home', user_name)
+      else
+        user_home = Dir.home
+      end
+      local_rvm_version = @options[:user_rvm]
+      system_rvm_version = @options[:system_rvm]
+      auto_rvm = @options[:rvm]
+      if auto_rvm
+        if File.directory? File.join(user_home, '.rvm', 'environments')
+          local_rvm_version = auto_rvm
+        elsif File.directory? '/usr/local/rvm/environments'
+          system_rvm_version = auto_rvm
+        end
+      end
+      if local_rvm_version
+        rvm_env = File.join(user_home, '.rvm', 'environments', local_rvm_version)
+        ". #{rvm_env} && exec #{cmd}"
+      elsif system_rvm_version
+        rvm_env = File.join('/usr/local/rvm/environments', system_rvm_version)
+        ". #{rvm_env} && exec #{cmd}"
+      else
+        cmd
+      end
+    end
+
     def watch_process(name, process, n)
       port = @engine.port_for(process, n)
       base_env = process.instance_variable_get(:@options)[:env]
@@ -91,7 +124,6 @@ module ForemanGod
         w.group = app_name
         w.interval = 60.seconds
         w.env = env
-        w.start = process.expanded_command(env)
         log = File.expand_path(log_path, process.cwd)
         if File.directory? log
           w.log = File.join(log, "#{app_name}-#{name}-#{n}.log")
@@ -99,7 +131,10 @@ module ForemanGod
           LOG.warn "Log path does not exist: #{log}"
         end
 
+        w.start = wrap_command(process.expanded_command(env))
+
         w.uid = user_name if user_name
+
         # w.gid = ?
 
         w.transition(:up, :restart) do |on|

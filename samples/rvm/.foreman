@@ -1,0 +1,7 @@
+log: .
+user: test
+# This looks for rvm in /home/user/.rvm and /usr/local/rvm. If it does not find it, system Ruby is used.
+rvm: default
+# Some alternatives:
+#  user_rvm: ruby-1.9.3-p194 # or default
+#  system_rvm: default # or any specific ruby version

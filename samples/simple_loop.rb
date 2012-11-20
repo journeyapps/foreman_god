@@ -1,4 +1,5 @@
 puts "Starting simple loop"
+
 begin
   while true
     sleep 1
