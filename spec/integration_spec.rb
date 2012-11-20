@@ -14,7 +14,7 @@ describe "god" do
     sleep 1
     `god #{OPTIONS} terminate`
 
-    File.read('spec/tmp/simple-loop-1.log').should == "Starting simple loop\nTerminated loop with #<SignalException: SIGTERM>\n"
+    File.read('spec/tmp/test-simple-loop-1.log').should == "Starting simple loop\nTerminated loop with #<SignalException: SIGTERM>\n"
   end
 
   it "should restart a script on file touch" do
@@ -29,7 +29,7 @@ describe "god" do
 
     `god #{OPTIONS} terminate`
 
-    File.read('spec/tmp/simple-loop-1.log').should == "Starting simple loop\nTerminated loop with #<SignalException: SIGTERM>\n"*2
+    File.read('spec/tmp/test-simple-loop-1.log').should == "Starting simple loop\nTerminated loop with #<SignalException: SIGTERM>\n"*2
   end
 end
 

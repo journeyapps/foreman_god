@@ -72,8 +72,12 @@ describe GodConfig do
       watch.log.should == File.absolute_path('samples/configuration/configured-app-loop-1.log')
       watch.uid.should == user
     end
+  end
 
-
+  it "should glob" do
+    # This should match spec/simple
+    ForemanGod.watch 'spec/*'
+    God.watches.values.count.should == 1
   end
 
 end
