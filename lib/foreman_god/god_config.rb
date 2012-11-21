@@ -89,6 +89,11 @@ module ForemanGod
       @options[:log] || 'log'
     end
 
+    def group_name
+      gid = Etc.getpwnam(user_name).gid
+      Etc.getgrgid(gid).name
+    end
+
 
     def wrap_command(cmd)
       if user_name
@@ -140,6 +145,7 @@ module ForemanGod
         if user_name && (Etc.getlogin != user_name)
           # Only set the uid if the user is different from the current user
           w.uid = user_name
+          w.gid = group_name
         end
 
         # w.gid = ?

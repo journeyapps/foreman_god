@@ -28,7 +28,7 @@ describe GodConfig do
       watch.log.should == '/dev/null'
 
       watch.uid.should == nil # The user name is the same as the current user
-
+      watch.gid.should == nil
     end
 
     it "should log if log is specified" do
@@ -79,6 +79,7 @@ describe GodConfig do
       # We cannot easily test watch.uid in a single-user setup
       pending "Test watch.uid"
       #watch.uid.should == user
+      #watch.gid.should == ?
     end
   end
 
