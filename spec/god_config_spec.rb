@@ -10,7 +10,6 @@ describe GodConfig do
     it "should load basic properties" do
       config.dir_name.should == 'simple'
       config.app_name.should == 'simple'
-      config.user_name.should == nil
       config.options.should == {}
     end
 
@@ -27,7 +26,8 @@ describe GodConfig do
       watch.env.should == {'PORT' => '5000'}
       watch.start.should == 'ruby ../simple_loop.rb -p 5000'
       watch.log.should == '/dev/null'
-      watch.uid.should == nil
+
+      watch.uid.should == nil # The user name is the same as the current user
 
     end
 
@@ -42,11 +42,16 @@ describe GodConfig do
       end
     end
 
+    it "should default to using the owner of Procfile as the user" do
+      user_name = Etc.getpwuid(File.stat('samples/simple/Procfile').uid).name
+      config.user_name.should == user_name
+    end
+
   end
 
   context "configuration" do
-    let(:config) { GodConfig.new(sample('configuration')) }
     let(:user) { Etc.getlogin }
+    let(:config) { GodConfig.new(sample('configuration')) }
 
     it "should load basic properties" do
       config.dir_name.should == 'configuration'
@@ -56,7 +61,7 @@ describe GodConfig do
     end
 
     it "should watch" do
-      config.options["user"] = user # We need to override the user to the current user, otherwise god will fail
+      config = GodConfig.new(sample('configuration'), user: user) # we need to override the user here
 
       config.watch
       God.watches.values.count.should == 3
@@ -70,7 +75,10 @@ describe GodConfig do
       watch.env.should == {'PORT' => '5000', 'MY_VAR' => '12345', 'ANOTHER_VAR' => 'yes'}
       watch.start.should == 'ruby ../simple_loop.rb -p 5000'
       watch.log.should == File.absolute_path('samples/configuration/configured-app-loop-1.log')
-      watch.uid.should == user
+
+      # We cannot easily test watch.uid in a single-user setup
+      pending "Test watch.uid"
+      #watch.uid.should == user
     end
   end
 

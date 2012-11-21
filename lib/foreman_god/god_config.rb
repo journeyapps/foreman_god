@@ -5,6 +5,7 @@ require 'foreman/engine'
 require 'thor/core_ext/hash_with_indifferent_access'
 require 'god'
 require 'foreman_god'
+require 'etc'
 
 module God
   module Conditions
@@ -47,7 +48,10 @@ module ForemanGod
   class GodConfig
     attr_reader :dir_name, :options, :engine
 
-    def initialize dir
+    # Defaults to the owner of Procfile, but may be overridden with the user option in .foreman
+    attr_reader :user_name
+
+    def initialize dir, override_options={}
       @dir_name = File.basename(File.absolute_path(dir))
       if @dir_name == 'current'
         @dir_name = File.basename(File.dirname(File.absolute_path(dir)))
@@ -57,6 +61,7 @@ module ForemanGod
       temp_options = {}
       temp_options = (::YAML::load_file(options_file) || {}) if File.exists? options_file
       @options = Thor::CoreExt::HashWithIndifferentAccess.new(temp_options)
+      @options.merge! override_options
 
 
       @engine = Foreman::Engine.new(@options)
@@ -71,14 +76,13 @@ module ForemanGod
       end
 
       @engine.load_procfile(File.join(dir, "Procfile"))
+
+      procfile_owner = Etc.getpwuid(File.stat(File.join(dir, "Procfile")).uid).name
+      @user_name = @options[:user] || procfile_owner
     end
 
     def app_name
       @options[:app] || @dir_name
-    end
-
-    def user_name
-      @options[:user]
     end
 
     def log_path
@@ -133,7 +137,10 @@ module ForemanGod
 
         w.start = wrap_command(process.expanded_command(env))
 
-        w.uid = user_name if user_name
+        if user_name && (Etc.getlogin != user_name)
+          # Only set the uid if the user is different from the current user
+          w.uid = user_name
+        end
 
         # w.gid = ?
 
