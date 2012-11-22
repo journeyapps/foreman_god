@@ -142,20 +142,13 @@ module ForemanGod
 
         w.start = wrap_command(process.expanded_command(env))
 
+        # Only set the uid if the user is different from the current user
         if user_name && (Etc.getlogin != user_name)
-          # Only set the uid if the user is different from the current user
           w.uid = user_name
           w.gid = group_name
         end
 
-        # w.gid = ?
-
         w.transition(:up, :restart) do |on|
-          on.condition(:memory_usage) do |c|
-            c.above = 350.megabytes
-            c.times = 2
-          end
-
           on.condition(:foreman_restart_file_touched) do |c|
             c.interval = 5.seconds
             # Should we make this path configurable?
