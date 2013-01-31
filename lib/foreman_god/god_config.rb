@@ -143,7 +143,7 @@ module ForemanGod
         w.start = wrap_command(process.expanded_command(env))
 
         # Only set the uid if the user is different from the current user
-        if user_name && (Etc.getlogin != user_name)
+        if user_name && (Etc.getpwuid(Process.uid).name != user_name)
           w.uid = user_name
           w.gid = group_name
         end
