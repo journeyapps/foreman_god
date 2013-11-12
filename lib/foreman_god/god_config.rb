@@ -34,7 +34,7 @@ module God
       def test
         ptime = process_start_time
         if ptime
-          process_start_time < restart_file_modification_time
+          ptime < restart_file_modification_time
         else
           false
         end
