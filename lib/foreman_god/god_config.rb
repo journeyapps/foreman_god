@@ -184,16 +184,16 @@ module ForemanGod
           w.gid = group_name
         end
 
-        w.transition(:up, :stop) do |on|
-          on.condition(:foreman_stop_file_exists) do |c|
+        w.transition(:up, :stop) do |stop|
+          stop.condition(:foreman_stop_file_exists) do |c|
             c.interval = 5.seconds
             # Should we make this path configurable? and DRY it up
             c.stop_file = File.join(process.cwd, 'tmp', 'stop.txt')
           end
         end
 
-        w.transition(:stop, :restart) do |on|
-          on.condition(:foreman_stop_file_doesnt_exist) do |c|
+        w.transition(:stop, :up) do |start|
+          start.condition(:foreman_stop_file_doesnt_exist) do |c|
             c.interval = 5.seconds
             # Should we make this path configurable? and DRY it up
             c.stop_file = File.join(process.cwd, 'tmp', 'stop.txt')
