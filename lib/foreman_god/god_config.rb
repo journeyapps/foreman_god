@@ -12,7 +12,7 @@ module God
 
   old_stderr = $stderr
   $stderr = ::StringIO.new
-  VALID_STATES += [:stop] unless VALID_STATES.include? :stop
+  Watch::VALID_STATES += [:stop] unless Watch::VALID_STATES.include? :stop
   $stderr = old_stderr
   
   module Conditions
