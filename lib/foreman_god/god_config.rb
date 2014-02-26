@@ -6,8 +6,15 @@ require 'thor/core_ext/hash_with_indifferent_access'
 require 'god'
 require 'foreman_god'
 require 'etc'
+require 'stringio'
 
 module God
+
+  old_stderr = $stderr
+  $stderr = ::StringIO.new
+  VALID_STATES += [:stop] unless VALID_STATES.include? :stop
+  $stderr = old_stderr
+  
   module Conditions
     class ForemanStopFileDoesntExist < PollCondition
       attr_accessor :stop_file
