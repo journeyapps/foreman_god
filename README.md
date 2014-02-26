@@ -31,6 +31,10 @@ See samples/configuration for a complete example.
 If present, the `tmp/restart.txt` file in your project is watched for changes. If this file is modified, for example
 with `touch tmp/restart.txt`, all workers are restarted.
 
+### Stop workers
+
+If present, the `tmp/stop.txt` file will stop all workers.  If it is removed, the workers will start.
+
 ### Reloading the Procfile
 
 When the Procfile (or .env or .foreman files) changed, use `god load <god config> stop` to reload the config files.
