@@ -8,7 +8,46 @@ require 'foreman_god'
 require 'etc'
 
 module God
+
+  Watch::VALID_STATES << :stop unless Watch::VALID_STATES.include? :stop
+  
   module Conditions
+    class ForemanStopFileDoesntExist < PollCondition
+      attr_accessor :stop_file
+
+      def initialize
+        super
+      end
+
+      def valid?
+        valid = true
+        valid &= complain("Attribute 'stop_file' must be specified", self) if self.stop_file.nil?
+        valid
+      end
+
+      def test
+        ! File.exist? stop_file
+      end
+    end
+
+    class ForemanStopFileExists < PollCondition
+      attr_accessor :stop_file
+
+      def initialize
+        super
+      end
+
+      def valid?
+        valid = true
+        valid &= complain("Attribute 'stop_file' must be specified", self) if self.stop_file.nil?
+        valid
+      end
+
+      def test
+        File.exist? stop_file
+      end
+    end
+
     # Adapted from https://gist.github.com/571095
     class ForemanRestartFileTouched < PollCondition
       attr_accessor :restart_file
@@ -146,6 +185,22 @@ module ForemanGod
         if user_name && (Etc.getpwuid(Process.uid).name != user_name)
           w.uid = user_name
           w.gid = group_name
+        end
+
+        w.transition(:up, :stop) do |stop|
+          stop.condition(:foreman_stop_file_exists) do |c|
+            c.interval = 5.seconds
+            # Should we make this path configurable? and DRY it up
+            c.stop_file = File.join(process.cwd, 'tmp', 'stop.txt')
+          end
+        end
+
+        w.transition(:stop, :up) do |start|
+          start.condition(:foreman_stop_file_doesnt_exist) do |c|
+            c.interval = 5.seconds
+            # Should we make this path configurable? and DRY it up
+            c.stop_file = File.join(process.cwd, 'tmp', 'stop.txt')
+          end
         end
 
         w.transition(:up, :restart) do |on|
