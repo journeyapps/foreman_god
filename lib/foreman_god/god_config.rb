@@ -6,14 +6,10 @@ require 'thor/core_ext/hash_with_indifferent_access'
 require 'god'
 require 'foreman_god'
 require 'etc'
-require 'stringio'
 
 module God
 
-  old_stderr = $stderr
-  $stderr = ::StringIO.new
-  Watch::VALID_STATES += [:stop] unless Watch::VALID_STATES.include? :stop
-  $stderr = old_stderr
+  Watch::VALID_STATES << :stop unless Watch::VALID_STATES.include? :stop
   
   module Conditions
     class ForemanStopFileDoesntExist < PollCondition
