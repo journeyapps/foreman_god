@@ -5,85 +5,15 @@ require 'foreman/engine'
 require 'thor/core_ext/hash_with_indifferent_access'
 require 'god'
 require 'foreman_god'
+require 'foreman_god/conditions'
 require 'etc'
 
 module God
-
   Watch::VALID_STATES << :stop unless Watch::VALID_STATES.include? :stop
-  
-  module Conditions
-    class ForemanStopFileDoesntExist < PollCondition
-      attr_accessor :stop_file
-
-      def initialize
-        super
-      end
-
-      def valid?
-        valid = true
-        valid &= complain("Attribute 'stop_file' must be specified", self) if self.stop_file.nil?
-        valid
-      end
-
-      def test
-        ! File.exist? stop_file
-      end
-    end
-
-    class ForemanStopFileExists < PollCondition
-      attr_accessor :stop_file
-
-      def initialize
-        super
-      end
-
-      def valid?
-        valid = true
-        valid &= complain("Attribute 'stop_file' must be specified", self) if self.stop_file.nil?
-        valid
-      end
-
-      def test
-        File.exist? stop_file
-      end
-    end
-
-    # Adapted from https://gist.github.com/571095
-    class ForemanRestartFileTouched < PollCondition
-      attr_accessor :restart_file
-
-      def initialize
-        super
-      end
-
-      def process_start_time
-        Time.parse(`ps -o lstart= -p #{self.watch.pid}`) rescue nil
-      end
-
-      def restart_file_modification_time
-        File.mtime(self.restart_file) rescue Time.at(0)
-      end
-
-      def valid?
-        valid = true
-        valid &= complain("Attribute 'restart_file' must be specified", self) if self.restart_file.nil?
-        valid
-      end
-
-      def test
-        ptime = process_start_time
-        if ptime
-          ptime < restart_file_modification_time
-        else
-          false
-        end
-      end
-    end
-  end
 end
 
-
 module ForemanGod
+
   class GodConfig
     attr_reader :dir_name, :options, :engine
 
@@ -133,6 +63,21 @@ module ForemanGod
       Etc.getgrgid(gid).name
     end
 
+    def file_dir(process)
+      File.join(process.cwd, 'tmp')
+    end
+
+    def stop_file(process)
+      File.join(file_dir(process), 'stop.txt')
+    end
+
+    def stop_file?(process)
+      File.exists?(stop_file(process))
+    end
+
+    def restart_file(process)
+      File.join(file_dir(process), 'restart.txt')
+    end
 
     def wrap_command(cmd)
       if user_name
@@ -190,29 +135,29 @@ module ForemanGod
         w.transition(:up, :stop) do |stop|
           stop.condition(:foreman_stop_file_exists) do |c|
             c.interval = 5.seconds
-            # Should we make this path configurable? and DRY it up
-            c.stop_file = File.join(process.cwd, 'tmp', 'stop.txt')
+            c.stop_file = stop_file(process)
           end
         end
 
         w.transition(:stop, :up) do |start|
-          start.condition(:foreman_stop_file_doesnt_exist) do |c|
+          start.condition(:foreman_stop_file_exists) do |c|
             c.interval = 5.seconds
-            # Should we make this path configurable? and DRY it up
-            c.stop_file = File.join(process.cwd, 'tmp', 'stop.txt')
+            c.invert = true # absence
+            c.stop_file = stop_file(process)
           end
         end
 
         w.transition(:up, :restart) do |on|
           on.condition(:foreman_restart_file_touched) do |c|
             c.interval = 5.seconds
-            # Should we make this path configurable?
-            c.restart_file = File.join(process.cwd, 'tmp', 'restart.txt')
+            c.restart_file = restart_file(process)
           end
         end
 
         # determine the state on startup
-        w.transition(:init, { true => :up, false => :start }) do |on|
+        w.transition(:init, { true => stop_file?(process) ? :stop : :up,
+                             false => stop_file?(process) ? :stop : :start }
+        ) do |on|
           on.condition(:process_running) do |c|
             c.running = true
           end
@@ -239,7 +184,6 @@ module ForemanGod
             c.running = false
           end
         end
-
       end
     end
 
@@ -252,5 +196,4 @@ module ForemanGod
     end
   end
 end
-
 
