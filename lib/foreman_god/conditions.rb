@@ -1,0 +1,2 @@
+require 'foreman_god/conditions/foreman_stop_file_exists'
+require 'foreman_god/conditions/foreman_restart_file_touched'
